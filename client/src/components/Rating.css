@@ -1,0 +1,22 @@
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.rating-star {
+  color: var(--accent-light);
+  font-size: 0.9rem;
+}
+
+.rating-star.empty {
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
+.rating-value {
+  margin-left: var(--space-xs);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
