@@ -136,8 +136,8 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            chmod +x setup_ec2.sh
-            ./setup_ec2.sh
+            chmod +x client/setup_ec2.sh
+            ./client/setup_ec2.sh
 
       - name: Copy files to EC2 via SCP
         uses: appleboy/scp-action@v0.1.7
