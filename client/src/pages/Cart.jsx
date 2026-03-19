@@ -12,19 +12,26 @@ export default function Cart() {
   return (
     <div className="page-enter cart-page" id="cart-page">
       <div className="container">
-        <h1>Shopping Cart {count > 0 && <span style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>({count} items)</span>}</h1>
+        <h1>
+          Shopping Cart{' '}
+          {count > 0 && (
+            <span style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>({count} items)</span>
+          )}
+        </h1>
 
         {items.length === 0 ? (
           <div className="empty-cart">
             <div className="empty-cart-icon">🛒</div>
             <h2>Your cart is empty</h2>
             <p>Looks like you haven't added anything yet.</p>
-            <Link to="/products" className="btn btn-primary" id="continue-shopping-btn">Continue Shopping</Link>
+            <Link to="/products" className="btn btn-primary" id="continue-shopping-btn">
+              Continue Shopping
+            </Link>
           </div>
         ) : (
           <div className="cart-layout">
             <div className="cart-items">
-              {items.map(item => (
+              {items.map((item) => (
                 <div className="cart-item" key={item.id} id={`cart-item-${item.id}`}>
                   <div className="cart-item-image">
                     <Link to={`/products/${item.productId}`}>
@@ -38,11 +45,17 @@ export default function Cart() {
                     <span className="cart-item-price">${item.product?.price.toFixed(2)} each</span>
                     <div className="cart-item-controls">
                       <div className="cart-qty">
-                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>−</button>
+                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>
+                          −
+                        </button>
                         <span>{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
+                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>
+                          +
+                        </button>
                       </div>
-                      <button className="cart-item-remove" onClick={() => removeItem(item.id)}>Remove</button>
+                      <button className="cart-item-remove" onClick={() => removeItem(item.id)}>
+                        Remove
+                      </button>
                     </div>
                   </div>
                   <span className="cart-item-subtotal gradient-text">

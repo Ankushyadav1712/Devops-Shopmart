@@ -5,7 +5,7 @@ const Product = require('../models/Product');
 // GET /api/products — list all products, optional ?category= filter and ?search= filter
 router.get('/', async (req, res) => {
   try {
-    let query = {};
+    const query = {};
 
     if (req.query.category) {
       query.category = { $regex: new RegExp(`^${req.query.category}$`, 'i') };
@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
       const search = req.query.search;
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { description: { $regex: search, $options: 'i' } },
       ];
     }
 

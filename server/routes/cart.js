@@ -8,18 +8,20 @@ router.get('/', async (req, res) => {
   try {
     const items = await CartItem.find().populate('productId');
 
-    const cartItems = items.map(item => ({
+    const cartItems = items.map((item) => ({
       id: item._id,
       productId: item.productId?._id,
       quantity: item.quantity,
-      product: item.productId ? {
-        _id: item.productId._id,
-        name: item.productId.name,
-        price: item.productId.price,
-        image: item.productId.image,
-        category: item.productId.category,
-        rating: item.productId.rating
-      } : null
+      product: item.productId
+        ? {
+            _id: item.productId._id,
+            name: item.productId.name,
+            price: item.productId.price,
+            image: item.productId.image,
+            category: item.productId.category,
+            rating: item.productId.rating,
+          }
+        : null,
     }));
 
     const total = cartItems.reduce((sum, item) => {
@@ -56,7 +58,7 @@ router.post('/', async (req, res) => {
 
     const newItem = await CartItem.create({
       productId: productId,
-      quantity: parseInt(quantity)
+      quantity: parseInt(quantity),
     });
 
     res.status(201).json({ message: 'Item added to cart', item: newItem });

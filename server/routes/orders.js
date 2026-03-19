@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
 const CartItem = require('../models/CartItem');
-const Product = require('../models/Product');
 
 // POST /api/orders — place an order
 router.post('/', async (req, res) => {
@@ -20,11 +19,11 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'Name, email, and address are required' });
     }
 
-    const orderItems = cartItems.map(item => ({
+    const orderItems = cartItems.map((item) => ({
       productId: item.productId?._id,
       name: item.productId ? item.productId.name : 'Unknown',
       price: item.productId ? item.productId.price : 0,
-      quantity: item.quantity
+      quantity: item.quantity,
     }));
 
     const total = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -33,7 +32,7 @@ router.post('/', async (req, res) => {
       customer: { name, email, address },
       items: orderItems,
       total: parseFloat(total.toFixed(2)),
-      status: 'confirmed'
+      status: 'confirmed',
     });
 
     // Clear cart after successful order

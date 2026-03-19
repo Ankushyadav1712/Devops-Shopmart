@@ -27,7 +27,12 @@ export default function ProductCard({ product }) {
         <Rating value={product.rating} />
         <div className="product-card-footer">
           <span className="product-card-price">${product.price.toFixed(2)}</span>
-          <button className="product-card-add" onClick={handleAdd} title="Add to cart" id={`add-to-cart-${product.id}`}>
+          <button
+            className="product-card-add"
+            onClick={handleAdd}
+            title="Add to cart"
+            id={`add-to-cart-${product.id}`}
+          >
             +
           </button>
         </div>

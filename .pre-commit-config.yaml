@@ -1,0 +1,24 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+      - id: detect-private-key
+
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint
+        entry: npx eslint --ext .js,.jsx --max-warnings=0
+        language: system
+        files: \.(js|jsx)$
+        exclude: node_modules/
+
+      - id: prettier
+        name: Prettier
+        entry: npx prettier --check
+        language: system
+        files: \.(js|jsx|json|css|md)$
+        exclude: node_modules/|package-lock\.json

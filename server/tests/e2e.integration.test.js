@@ -1,6 +1,6 @@
 /**
  * Integration Tests: Frontend ↔ Backend
- * 
+ *
  * Tests the full end-to-end flow that the React frontend performs
  * against the Express backend API. Simulates the exact API calls
  * the frontend makes during user workflows.
@@ -9,12 +9,10 @@ const request = require('supertest');
 const app = require('../index');
 
 describe('🌐 Frontend ↔ Backend Integration Tests', () => {
-
   // ─────────────────────────────────────────
   // Home Page Data Loading
   // ─────────────────────────────────────────
   describe('Home Page — Featured Products Loading', () => {
-
     it('should load featured products for the hero section', async () => {
       // Frontend Home.jsx calls: fetchProducts({ featured: true })
       const res = await request(app).get('/api/products?featured=true');
@@ -23,7 +21,7 @@ describe('🌐 Frontend ↔ Backend Integration Tests', () => {
       expect(res.body.length).toBeGreaterThan(0);
 
       // Each product should have all fields the ProductCard component needs
-      res.body.forEach(product => {
+      res.body.forEach((product) => {
         expect(product).toHaveProperty('id');
         expect(product).toHaveProperty('name');
         expect(product).toHaveProperty('price');
@@ -40,7 +38,6 @@ describe('🌐 Frontend ↔ Backend Integration Tests', () => {
   // Products Page — Search & Filter
   // ─────────────────────────────────────────
   describe('Products Page — Search & Category Filter', () => {
-
     it('should load all products (no filters)', async () => {
       // Frontend Products.jsx calls: fetchProducts({})
       const res = await request(app).get('/api/products');
@@ -51,12 +48,14 @@ describe('🌐 Frontend ↔ Backend Integration Tests', () => {
     it('should filter by category from URL params', async () => {
       // Frontend reads ?category= from URL searchParams
       const categories = ['Electronics', 'Clothing', 'Home & Kitchen', 'Books'];
-      
+
       for (const category of categories) {
-        const res = await request(app).get(`/api/products?category=${encodeURIComponent(category)}`);
+        const res = await request(app).get(
+          `/api/products?category=${encodeURIComponent(category)}`
+        );
         expect(res.statusCode).toBe(200);
         expect(res.body.length).toBeGreaterThan(0);
-        res.body.forEach(p => expect(p.category).toBe(category));
+        res.body.forEach((p) => expect(p.category).toBe(category));
       }
     });
 
@@ -65,9 +64,9 @@ describe('🌐 Frontend ↔ Backend Integration Tests', () => {
       const res = await request(app).get('/api/products?search=watch');
       expect(res.statusCode).toBe(200);
       expect(res.body.length).toBeGreaterThan(0);
-      const hasMatch = res.body.some(p => 
-        p.name.toLowerCase().includes('watch') || 
-        p.description.toLowerCase().includes('watch')
+      const hasMatch = res.body.some(
+        (p) =>
+          p.name.toLowerCase().includes('watch') || p.description.toLowerCase().includes('watch')
       );
       expect(hasMatch).toBe(true);
     });
@@ -75,10 +74,10 @@ describe('🌐 Frontend ↔ Backend Integration Tests', () => {
     it('should combine category + search filters', async () => {
       const res = await request(app).get('/api/products?category=Electronics&search=wireless');
       expect(res.statusCode).toBe(200);
-      res.body.forEach(p => {
+      res.body.forEach((p) => {
         expect(p.category).toBe('Electronics');
-        const matchesSearch = 
-          p.name.toLowerCase().includes('wireless') || 
+        const matchesSearch =
+          p.name.toLowerCase().includes('wireless') ||
           p.description.toLowerCase().includes('wireless');
         expect(matchesSearch).toBe(true);
       });
@@ -95,7 +94,6 @@ describe('🌐 Frontend ↔ Backend Integration Tests', () => {
   // Product Detail Page
   // ─────────────────────────────────────────
   describe('Product Detail Page — Data Loading', () => {
-
     it('should load single product with all detail fields', async () => {
       // Frontend ProductDetail.jsx calls: fetchProduct(id)
       const res = await request(app).get('/api/products/3');
@@ -117,20 +115,15 @@ describe('🌐 Frontend ↔ Backend Integration Tests', () => {
   // Cart Page — Full User Flow
   // ─────────────────────────────────────────
   describe('Cart Page — Add / Update / Remove Flow', () => {
-
     it('should simulate user adding item from ProductCard', async () => {
       // ProductCard calls: addToCart(product.id)
-      const res = await request(app)
-        .post('/api/cart')
-        .send({ productId: 8, quantity: 1 });
+      const res = await request(app).post('/api/cart').send({ productId: 8, quantity: 1 });
       expect(res.statusCode).toBe(201);
     });
 
     it('should simulate user adding item from ProductDetail with quantity', async () => {
       // ProductDetail calls: addToCart(product.id, quantity)
-      const res = await request(app)
-        .post('/api/cart')
-        .send({ productId: 10, quantity: 3 });
+      const res = await request(app).post('/api/cart').send({ productId: 10, quantity: 3 });
       expect(res.statusCode).toBe(201);
     });
 
@@ -139,8 +132,8 @@ describe('🌐 Frontend ↔ Backend Integration Tests', () => {
       const res = await request(app).get('/api/cart');
       expect(res.statusCode).toBe(200);
       expect(res.body.items.length).toBe(2);
-      
-      res.body.items.forEach(item => {
+
+      res.body.items.forEach((item) => {
         expect(item.product).not.toBeNull();
         expect(item.product.name).toBeDefined();
         expect(item.product.image).toBeDefined();
@@ -149,7 +142,8 @@ describe('🌐 Frontend ↔ Backend Integration Tests', () => {
 
       // Total should be correctly computed
       const expectedTotal = res.body.items.reduce(
-        (sum, item) => sum + (item.product.price * item.quantity), 0
+        (sum, item) => sum + item.product.price * item.quantity,
+        0
       );
       expect(res.body.total).toBeCloseTo(expectedTotal, 2);
     });
@@ -172,9 +166,7 @@ describe('🌐 Frontend ↔ Backend Integration Tests', () => {
       const cartRes = await request(app).get('/api/cart');
       const item = cartRes.body.items[0];
 
-      const res = await request(app)
-        .put(`/api/cart/${item.id}`)
-        .send({ quantity: 0 });
+      const res = await request(app).put(`/api/cart/${item.id}`).send({ quantity: 0 });
       expect(res.statusCode).toBe(200);
       expect(res.body.message).toBe('Item removed from cart');
     });
@@ -192,7 +184,6 @@ describe('🌐 Frontend ↔ Backend Integration Tests', () => {
   // Checkout — Complete Purchase Flow
   // ─────────────────────────────────────────
   describe('Checkout Page — End-to-End Purchase', () => {
-
     it('should simulate complete shopping journey: browse → add → checkout', async () => {
       // 1. User browses products (Home page)
       const productsRes = await request(app).get('/api/products?featured=true');
@@ -217,13 +208,11 @@ describe('🌐 Frontend ↔ Backend Integration Tests', () => {
       );
 
       // 5. User fills checkout form and places order
-      const orderRes = await request(app)
-        .post('/api/orders')
-        .send({
-          name: 'Jane Smith',
-          email: 'jane@shopmart.com',
-          address: '456 Oak Ave, Los Angeles, CA 90001'
-        });
+      const orderRes = await request(app).post('/api/orders').send({
+        name: 'Jane Smith',
+        email: 'jane@shopmart.com',
+        address: '456 Oak Ave, Los Angeles, CA 90001',
+      });
 
       expect(orderRes.statusCode).toBe(201);
       expect(orderRes.body.order.customer.name).toBe('Jane Smith');
@@ -248,7 +237,6 @@ describe('🌐 Frontend ↔ Backend Integration Tests', () => {
   // API Contract Validation
   // ─────────────────────────────────────────
   describe('API Contract — Response Shape Validation', () => {
-
     it('cart response should match CartContext expected shape', async () => {
       const res = await request(app).get('/api/cart');
       // CartContext expects: { items: [], total: number, count: number }
@@ -262,7 +250,7 @@ describe('🌐 Frontend ↔ Backend Integration Tests', () => {
 
     it('product response should have image URLs for frontend rendering', async () => {
       const res = await request(app).get('/api/products');
-      res.body.forEach(product => {
+      res.body.forEach((product) => {
         expect(product.image).toMatch(/^https?:\/\//);
       });
     });
