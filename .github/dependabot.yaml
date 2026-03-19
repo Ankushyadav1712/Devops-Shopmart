@@ -1,0 +1,53 @@
+version: 2
+
+updates:
+  - package-ecosystem: "npm"
+    directory: "/client"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "client"
+    groups:
+      client-safe-deps:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      client-risky-deps:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+
+  - package-ecosystem: "npm"
+    directory: "/server"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "server"
+    groups:
+      server-safe-deps:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      server-risky-deps:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "root"
