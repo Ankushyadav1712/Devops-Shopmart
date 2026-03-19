@@ -1,54 +1,58 @@
 const express = require('express');
 const router = express.Router();
-const products = require('../data/products');
-const cartRouter = require('./cart');
-
-// In-memory orders storage
-let orders = [];
+const Order = require('../models/Order');
+const CartItem = require('../models/CartItem');
+const Product = require('../models/Product');
 
 // POST /api/orders — place an order
-router.post('/', (req, res) => {
-  const { name, email, address } = req.body;
-  const cart = cartRouter.getCart();
+router.post('/', async (req, res) => {
+  try {
+    const { name, email, address } = req.body;
 
-  if (cart.length === 0) {
-    return res.status(400).json({ message: 'Cart is empty' });
-  }
+    // Get cart items with product details
+    const cartItems = await CartItem.find().populate('productId');
 
-  if (!name || !email || !address) {
-    return res.status(400).json({ message: 'Name, email, and address are required' });
-  }
+    if (cartItems.length === 0) {
+      return res.status(400).json({ message: 'Cart is empty' });
+    }
 
-  const orderItems = cart.map(item => {
-    const product = products.find(p => p.id === item.productId);
-    return {
-      productId: item.productId,
-      name: product ? product.name : 'Unknown',
-      price: product ? product.price : 0,
+    if (!name || !email || !address) {
+      return res.status(400).json({ message: 'Name, email, and address are required' });
+    }
+
+    const orderItems = cartItems.map(item => ({
+      productId: item.productId?._id,
+      name: item.productId ? item.productId.name : 'Unknown',
+      price: item.productId ? item.productId.price : 0,
       quantity: item.quantity
-    };
-  });
+    }));
 
-  const total = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const total = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const order = {
-    id: Date.now(),
-    customer: { name, email, address },
-    items: orderItems,
-    total: parseFloat(total.toFixed(2)),
-    status: 'confirmed',
-    createdAt: new Date().toISOString()
-  };
+    const order = await Order.create({
+      customer: { name, email, address },
+      items: orderItems,
+      total: parseFloat(total.toFixed(2)),
+      status: 'confirmed'
+    });
 
-  orders.push(order);
-  cartRouter.clearCart();
+    // Clear cart after successful order
+    await CartItem.deleteMany({});
 
-  res.status(201).json({ message: 'Order placed successfully', order });
+    res.status(201).json({ message: 'Order placed successfully', order });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 });
 
 // GET /api/orders — get order history
-router.get('/', (req, res) => {
-  res.json(orders);
+router.get('/', async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 });
 
 module.exports = router;
