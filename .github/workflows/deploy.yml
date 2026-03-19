@@ -89,6 +89,13 @@ jobs:
           path: client/dist/*
           retention-days: 1
 
+      - name: Upload client setup script
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-setup-script
+          path: client/setup_ec2.sh
+          retention-days: 1
+
   deploy:
     name: Deploy to EC2
     runs-on: ubuntu-latest
@@ -101,6 +108,12 @@ jobs:
         with:
           name: client-dist
           path: dist/
+
+      - name: Download client setup script
+        uses: actions/download-artifact@v4
+        with:
+          name: client-setup-script
+          path: client/
 
       - name: Debug files
         run: |
