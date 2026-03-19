@@ -1,6 +1,6 @@
 /**
  * Integration Tests: API + Data Layer
- * 
+ *
  * Tests the interaction between Express API routes and the in-memory
  * data store. Validates that endpoints correctly read, create, update,
  * and delete data, and that modules interact properly.
@@ -9,7 +9,6 @@ const request = require('supertest');
 const app = require('../index');
 
 describe('🔗 API + Data Integration Tests', () => {
-
   // ─────────────────────────────────────────
   // Health Check
   // ─────────────────────────────────────────
@@ -26,7 +25,6 @@ describe('🔗 API + Data Integration Tests', () => {
   // Products API ↔ Data Store
   // ─────────────────────────────────────────
   describe('Products API ↔ Data Store', () => {
-
     it('GET /api/products — should return all products from data store', async () => {
       const res = await request(app).get('/api/products');
       expect(res.statusCode).toBe(200);
@@ -49,7 +47,7 @@ describe('🔗 API + Data Integration Tests', () => {
       const res = await request(app).get('/api/products?category=Electronics');
       expect(res.statusCode).toBe(200);
       expect(res.body.length).toBeGreaterThan(0);
-      res.body.forEach(product => {
+      res.body.forEach((product) => {
         expect(product.category).toBe('Electronics');
       });
     });
@@ -71,7 +69,7 @@ describe('🔗 API + Data Integration Tests', () => {
     it('GET /api/products?featured=true — should return only featured products', async () => {
       const res = await request(app).get('/api/products?featured=true');
       expect(res.statusCode).toBe(200);
-      res.body.forEach(product => {
+      res.body.forEach((product) => {
         expect(product.featured).toBe(true);
       });
     });
@@ -94,7 +92,6 @@ describe('🔗 API + Data Integration Tests', () => {
   // Cart API ↔ Data Store
   // ─────────────────────────────────────────
   describe('Cart API ↔ Data Store', () => {
-
     it('GET /api/cart — should return empty cart initially', async () => {
       const res = await request(app).get('/api/cart');
       expect(res.statusCode).toBe(200);
@@ -104,9 +101,7 @@ describe('🔗 API + Data Integration Tests', () => {
     });
 
     it('POST /api/cart — should add a product to cart', async () => {
-      const res = await request(app)
-        .post('/api/cart')
-        .send({ productId: 1, quantity: 2 });
+      const res = await request(app).post('/api/cart').send({ productId: 1, quantity: 2 });
       expect(res.statusCode).toBe(201);
       expect(res.body.message).toBe('Item added to cart');
       expect(res.body.item.productId).toBe(1);
@@ -126,25 +121,19 @@ describe('🔗 API + Data Integration Tests', () => {
     });
 
     it('POST /api/cart — should increment quantity for duplicate product', async () => {
-      const res = await request(app)
-        .post('/api/cart')
-        .send({ productId: 1, quantity: 1 });
+      const res = await request(app).post('/api/cart').send({ productId: 1, quantity: 1 });
       expect(res.statusCode).toBe(200);
       expect(res.body.message).toBe('Cart updated');
       expect(res.body.item.quantity).toBe(3); // 2 + 1
     });
 
     it('POST /api/cart — should fail without productId', async () => {
-      const res = await request(app)
-        .post('/api/cart')
-        .send({ quantity: 1 });
+      const res = await request(app).post('/api/cart').send({ quantity: 1 });
       expect(res.statusCode).toBe(400);
     });
 
     it('POST /api/cart — should fail for non-existent product', async () => {
-      const res = await request(app)
-        .post('/api/cart')
-        .send({ productId: 999 });
+      const res = await request(app).post('/api/cart').send({ productId: 999 });
       expect(res.statusCode).toBe(404);
     });
 
@@ -153,9 +142,7 @@ describe('🔗 API + Data Integration Tests', () => {
       const cartRes = await request(app).get('/api/cart');
       const itemId = cartRes.body.items[0].id;
 
-      const res = await request(app)
-        .put(`/api/cart/${itemId}`)
-        .send({ quantity: 5 });
+      const res = await request(app).put(`/api/cart/${itemId}`).send({ quantity: 5 });
       expect(res.statusCode).toBe(200);
       expect(res.body.item.quantity).toBe(5);
     });
@@ -179,7 +166,6 @@ describe('🔗 API + Data Integration Tests', () => {
   // Orders API ↔ Cart + Data
   // ─────────────────────────────────────────
   describe('Orders API ↔ Cart + Data (Cross-Module)', () => {
-
     it('POST /api/orders — should fail when cart is empty', async () => {
       const res = await request(app)
         .post('/api/orders')
@@ -199,13 +185,11 @@ describe('🔗 API + Data Integration Tests', () => {
       expect(cartRes.body.total).toBeGreaterThan(0);
 
       // Step 3: Place order
-      const orderRes = await request(app)
-        .post('/api/orders')
-        .send({
-          name: 'John Doe',
-          email: 'john@example.com',
-          address: '123 Main St, New York, 10001'
-        });
+      const orderRes = await request(app).post('/api/orders').send({
+        name: 'John Doe',
+        email: 'john@example.com',
+        address: '123 Main St, New York, 10001',
+      });
       expect(orderRes.statusCode).toBe(201);
       expect(orderRes.body.message).toBe('Order placed successfully');
       expect(orderRes.body.order.customer.name).toBe('John Doe');
@@ -227,10 +211,8 @@ describe('🔗 API + Data Integration Tests', () => {
 
     it('POST /api/orders — should fail without required fields', async () => {
       await request(app).post('/api/cart').send({ productId: 1, quantity: 1 });
-      
-      const res = await request(app)
-        .post('/api/orders')
-        .send({ name: 'Test' }); // missing email and address
+
+      const res = await request(app).post('/api/orders').send({ name: 'Test' }); // missing email and address
       expect(res.statusCode).toBe(400);
       expect(res.body.message).toBe('Name, email, and address are required');
     });

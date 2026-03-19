@@ -28,13 +28,20 @@ export default function ProductDetail() {
   }, [id]);
 
   if (loading) return <Loader />;
-  if (!product) return <div className="container" style={{ paddingTop: '60px', textAlign: 'center' }}><h2>Product not found</h2></div>;
+  if (!product)
+    return (
+      <div className="container" style={{ paddingTop: '60px', textAlign: 'center' }}>
+        <h2>Product not found</h2>
+      </div>
+    );
 
   return (
     <div className="page-enter product-detail" id="product-detail-page">
       <div className="container">
-        <Link to="/products" className="back-link">← Back to Products</Link>
-        
+        <Link to="/products" className="back-link">
+          ← Back to Products
+        </Link>
+
         <div className="product-detail-grid">
           <div className="product-detail-image">
             <img src={product.image} alt={product.name} />
@@ -50,7 +57,9 @@ export default function ProductDetail() {
             <div className="product-detail-meta">
               <div className="meta-item">
                 <span className="meta-label">Availability</span>
-                <span className="meta-value in-stock">{product.stock > 0 ? `In Stock (${product.stock})` : 'Out of Stock'}</span>
+                <span className="meta-value in-stock">
+                  {product.stock > 0 ? `In Stock (${product.stock})` : 'Out of Stock'}
+                </span>
               </div>
               <div className="meta-item">
                 <span className="meta-label">Category</span>
@@ -64,9 +73,19 @@ export default function ProductDetail() {
 
             <div className="product-detail-actions">
               <div className="quantity-control">
-                <button className="quantity-btn" onClick={() => setQuantity(Math.max(1, quantity - 1))}>−</button>
+                <button
+                  className="quantity-btn"
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                >
+                  −
+                </button>
                 <span className="quantity-value">{quantity}</span>
-                <button className="quantity-btn" onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}>+</button>
+                <button
+                  className="quantity-btn"
+                  onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                >
+                  +
+                </button>
               </div>
               <button
                 className="add-to-cart-btn"

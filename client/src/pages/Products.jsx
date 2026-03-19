@@ -62,7 +62,7 @@ export default function Products() {
             />
           </div>
           <div className="filter-buttons">
-            {allCategories.map(cat => (
+            {allCategories.map((cat) => (
               <button
                 key={cat}
                 className={`filter-btn ${activeCategory === cat ? 'active' : ''}`}
@@ -75,7 +75,9 @@ export default function Products() {
           </div>
         </div>
 
-        <p className="products-count">{products.length} product{products.length !== 1 ? 's' : ''} found</p>
+        <p className="products-count">
+          {products.length} product{products.length !== 1 ? 's' : ''} found
+        </p>
 
         {loading ? (
           <Loader />
@@ -86,7 +88,7 @@ export default function Products() {
           </div>
         ) : (
           <div className="products-grid">
-            {products.map(product => (
+            {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

@@ -41,8 +41,8 @@ export default function Home() {
                 Discover <span className="gradient-text">Premium</span> Products for Every Lifestyle
               </h1>
               <p>
-                Shop the latest trends in electronics, fashion, home essentials, and more. 
-                Curated collections with unbeatable quality and prices.
+                Shop the latest trends in electronics, fashion, home essentials, and more. Curated
+                collections with unbeatable quality and prices.
               </p>
               <div className="hero-buttons">
                 <Link to="/products" className="btn btn-primary" id="hero-shop-now-btn">
@@ -69,8 +69,8 @@ export default function Home() {
             </div>
             <div className="hero-visual">
               <div className="hero-image-card">
-                <img 
-                  src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600" 
+                <img
+                  src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600"
                   alt="ShopMart Collection"
                 />
                 <div className="hero-float-tag" style={{ top: '20px', right: '-20px' }}>
@@ -94,7 +94,12 @@ export default function Home() {
           </div>
           <div className="categories-grid">
             {categories.map((cat) => (
-              <Link to={`/products?category=${cat.name}`} key={cat.name} className="category-card" id={`category-${cat.name.toLowerCase().replace(/\s+/g, '-')}`}>
+              <Link
+                to={`/products?category=${cat.name}`}
+                key={cat.name}
+                className="category-card"
+                id={`category-${cat.name.toLowerCase().replace(/\s+/g, '-')}`}
+              >
                 <div className="category-icon">{cat.icon}</div>
                 <h3>{cat.name}</h3>
                 <p>{cat.count}</p>
@@ -115,7 +120,7 @@ export default function Home() {
             <Loader />
           ) : (
             <div className="products-grid">
-              {featured.map(product => (
+              {featured.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>

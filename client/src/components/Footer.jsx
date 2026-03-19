@@ -8,7 +8,10 @@ export default function Footer() {
         <div className="footer-content">
           <div className="footer-brand">
             <h3 className="gradient-text">ShopMart</h3>
-            <p>Your one-stop destination for premium products at unbeatable prices. Quality meets convenience.</p>
+            <p>
+              Your one-stop destination for premium products at unbeatable prices. Quality meets
+              convenience.
+            </p>
           </div>
           <div className="footer-section">
             <h4>Shop</h4>

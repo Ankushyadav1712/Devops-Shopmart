@@ -1,5 +1,10 @@
 import { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import { fetchCart, addToCart as apiAddToCart, updateCartItem, removeCartItem as apiRemoveCartItem } from '../api';
+import {
+  fetchCart,
+  addToCart as apiAddToCart,
+  updateCartItem,
+  removeCartItem as apiRemoveCartItem,
+} from '../api';
 
 const CartContext = createContext();
 
@@ -91,14 +96,16 @@ export function CartProvider({ children }) {
   };
 
   return (
-    <CartContext.Provider value={{
-      ...state,
-      addToCart,
-      updateQuantity,
-      removeItem,
-      clearCart,
-      loadCart,
-    }}>
+    <CartContext.Provider
+      value={{
+        ...state,
+        addToCart,
+        updateQuantity,
+        removeItem,
+        clearCart,
+        loadCart,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );
