@@ -1,39 +1,39 @@
 const express = require('express');
 const router = express.Router();
-const Product = require('../models/Product');
+const products = require('../data/products');
 
-// GET /api/products — list all products, optional ?category= filter and ?search= filter
-router.get('/', async (req, res) => {
+// GET /api/products — list all products, optional ?category=, ?search=, ?featured= filters
+router.get('/', (req, res) => {
   try {
-    const query = {};
+    let filtered = [...products];
 
     if (req.query.category) {
-      query.category = { $regex: new RegExp(`^${req.query.category}$`, 'i') };
+      filtered = filtered.filter(
+        (p) => p.category.toLowerCase() === req.query.category.toLowerCase()
+      );
     }
 
     if (req.query.search) {
-      const search = req.query.search;
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-      ];
+      const search = req.query.search.toLowerCase();
+      filtered = filtered.filter(
+        (p) => p.name.toLowerCase().includes(search) || p.description.toLowerCase().includes(search)
+      );
     }
 
     if (req.query.featured === 'true') {
-      query.featured = true;
+      filtered = filtered.filter((p) => p.featured);
     }
 
-    const products = await Product.find(query);
-    res.json(products);
+    res.json(filtered);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 
 // GET /api/products/:id — get single product
-router.get('/:id', async (req, res) => {
+router.get('/:id', (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = products.find((p) => p.id === parseInt(req.params.id));
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }

@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const connectDB = require('./config/db');
 
 const productRoutes = require('./routes/products');
 const cartRoutes = require('./routes/cart');
@@ -32,8 +31,9 @@ app.use((err, req, res, next) => {
 // Export app for testing
 module.exports = app;
 
-// Only listen when run directly
+// Only listen and connect to DB when run directly (not imported by tests)
 if (require.main === module) {
+  const connectDB = require('./config/db');
   const PORT = process.env.PORT || 5001;
   connectDB().then(() => {
     app.listen(PORT, () => {
