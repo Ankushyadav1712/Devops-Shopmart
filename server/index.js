@@ -35,9 +35,10 @@ module.exports = app;
 if (require.main === module) {
   const connectDB = require('./config/db');
   const PORT = process.env.PORT || 5001;
-  connectDB().then(() => {
-    app.listen(PORT, () => {
-      console.log(`ShopMart API running on http://localhost:${PORT}`);
-    });
+
+  app.listen(PORT, () => {
+    console.log(`ShopMart API running on http://localhost:${PORT}`);
   });
+
+  connectDB();
 }
