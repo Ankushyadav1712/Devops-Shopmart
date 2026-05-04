@@ -9,7 +9,7 @@ on:
         type: string
 
 env:
-  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_REGION: us-east-1
   PROJECT: shopmart-dev
 
 jobs:
@@ -34,24 +34,26 @@ jobs:
 
       - name: Delete ALB
         run: |
-          ALB_ARN=$(aws elbv2 describe-load-balancers --names ${PROJECT}-alb --query 'LoadBalancers[0].LoadBalancerArn' --output text 2>/dev/null || echo "")
-          if [ -n "$ALB_ARN" ] && [ "$ALB_ARN" != "None" ]; then
+          set -x
+          ALB_ARN=$(aws elbv2 describe-load-balancers --names ${PROJECT}-alb --query 'LoadBalancers[0].LoadBalancerArn' --output text 2>&1) || ALB_ARN=""
+          if echo "$ALB_ARN" | grep -q "arn:aws:elasticloadbalancing"; then
             echo "Deleting ALB $ALB_ARN"
             aws elbv2 delete-load-balancer --load-balancer-arn "$ALB_ARN"
-            echo "Waiting 30s for ALB deletion to propagate..."
-            sleep 30
+            echo "Waiting 60s for ALB deletion to propagate..."
+            sleep 60
           else
-            echo "No ALB to delete"
+            echo "No ALB to delete (response: $ALB_ARN)"
           fi
 
       - name: Delete Target Group
         run: |
-          TG_ARN=$(aws elbv2 describe-target-groups --names ${PROJECT}-tg --query 'TargetGroups[0].TargetGroupArn' --output text 2>/dev/null || echo "")
-          if [ -n "$TG_ARN" ] && [ "$TG_ARN" != "None" ]; then
+          set -x
+          TG_ARN=$(aws elbv2 describe-target-groups --names ${PROJECT}-tg --query 'TargetGroups[0].TargetGroupArn' --output text 2>&1) || TG_ARN=""
+          if echo "$TG_ARN" | grep -q "arn:aws:elasticloadbalancing"; then
             echo "Deleting target group $TG_ARN"
             aws elbv2 delete-target-group --target-group-arn "$TG_ARN"
           else
-            echo "No target group to delete"
+            echo "No target group to delete (response: $TG_ARN)"
           fi
 
       - name: Delete ECS services and clusters

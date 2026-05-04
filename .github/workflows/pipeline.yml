@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_REGION: us-east-1
   TF_WORKING_DIR: infra/terraform
   PROJECT_NAME: shopmart
   ENVIRONMENT: dev
