@@ -1,0 +1,167 @@
+name: Manual Cleanup (Delete Orphan AWS Resources)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "DELETE" to confirm you want to delete all shopmart-dev AWS resources'
+        required: true
+        type: string
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  PROJECT: shopmart-dev
+
+jobs:
+  cleanup:
+    name: Delete orphan resources
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Verify confirmation
+        run: |
+          if [ "${{ inputs.confirm }}" != "DELETE" ]; then
+            echo "::error::You must type DELETE to confirm. Got: '${{ inputs.confirm }}'"
+            exit 1
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Delete ALB
+        run: |
+          ALB_ARN=$(aws elbv2 describe-load-balancers --names ${PROJECT}-alb --query 'LoadBalancers[0].LoadBalancerArn' --output text 2>/dev/null || echo "")
+          if [ -n "$ALB_ARN" ] && [ "$ALB_ARN" != "None" ]; then
+            echo "Deleting ALB $ALB_ARN"
+            aws elbv2 delete-load-balancer --load-balancer-arn "$ALB_ARN"
+            echo "Waiting 30s for ALB deletion to propagate..."
+            sleep 30
+          else
+            echo "No ALB to delete"
+          fi
+
+      - name: Delete Target Group
+        run: |
+          TG_ARN=$(aws elbv2 describe-target-groups --names ${PROJECT}-tg --query 'TargetGroups[0].TargetGroupArn' --output text 2>/dev/null || echo "")
+          if [ -n "$TG_ARN" ] && [ "$TG_ARN" != "None" ]; then
+            echo "Deleting target group $TG_ARN"
+            aws elbv2 delete-target-group --target-group-arn "$TG_ARN"
+          else
+            echo "No target group to delete"
+          fi
+
+      - name: Delete ECS services and clusters
+        run: |
+          for CLUSTER in $(aws ecs list-clusters --query 'clusterArns[]' --output text | tr '\t' '\n'); do
+            CLUSTER_NAME=$(basename "$CLUSTER")
+            case "$CLUSTER_NAME" in
+              ${PROJECT}*)
+                echo "Cleaning ECS cluster $CLUSTER_NAME"
+                for SVC in $(aws ecs list-services --cluster "$CLUSTER_NAME" --query 'serviceArns[]' --output text | tr '\t' '\n'); do
+                  if [ -n "$SVC" ]; then
+                    SVC_NAME=$(basename "$SVC")
+                    echo "  Stopping service $SVC_NAME"
+                    aws ecs update-service --cluster "$CLUSTER_NAME" --service "$SVC_NAME" --desired-count 0 >/dev/null
+                    aws ecs delete-service --cluster "$CLUSTER_NAME" --service "$SVC_NAME" --force >/dev/null
+                  fi
+                done
+                aws ecs delete-cluster --cluster "$CLUSTER_NAME" >/dev/null
+                echo "  Cluster deleted"
+                ;;
+            esac
+          done
+
+      - name: Delete ECR repository
+        run: |
+          if aws ecr describe-repositories --repository-names ${PROJECT} >/dev/null 2>&1; then
+            aws ecr delete-repository --repository-name ${PROJECT} --force
+            echo "Deleted ECR repo ${PROJECT}"
+          else
+            echo "No ECR repo to delete"
+          fi
+
+      - name: Delete IAM roles
+        run: |
+          for ROLE in ${PROJECT}-task-exec ${PROJECT}-task; do
+            if aws iam get-role --role-name "$ROLE" >/dev/null 2>&1; then
+              echo "Detaching policies from $ROLE"
+              for P in $(aws iam list-attached-role-policies --role-name "$ROLE" --query 'AttachedPolicies[].PolicyArn' --output text); do
+                aws iam detach-role-policy --role-name "$ROLE" --policy-arn "$P"
+              done
+              for P in $(aws iam list-role-policies --role-name "$ROLE" --query 'PolicyNames[]' --output text); do
+                aws iam delete-role-policy --role-name "$ROLE" --policy-name "$P"
+              done
+              aws iam delete-role --role-name "$ROLE"
+              echo "Deleted role $ROLE"
+            else
+              echo "No role $ROLE to delete"
+            fi
+          done
+
+      - name: Delete CloudWatch log group
+        run: |
+          if aws logs describe-log-groups --log-group-name-prefix /ecs/${PROJECT} --query 'logGroups[0].logGroupName' --output text 2>/dev/null | grep -q ${PROJECT}; then
+            aws logs delete-log-group --log-group-name /ecs/${PROJECT}
+            echo "Deleted log group /ecs/${PROJECT}"
+          else
+            echo "No log group to delete"
+          fi
+
+      - name: Delete shopmart-dev S3 buckets (app buckets, NOT state bucket)
+        run: |
+          for B in $(aws s3api list-buckets --query 'Buckets[?starts_with(Name, `shopmart-dev-`)].Name' --output text | tr '\t' '\n'); do
+            if [ -n "$B" ]; then
+              echo "Emptying and deleting $B"
+              aws s3api delete-objects --bucket "$B" \
+                --delete "$(aws s3api list-object-versions --bucket "$B" --max-items 1000 --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}' --output json)" 2>/dev/null || true
+              aws s3api delete-objects --bucket "$B" \
+                --delete "$(aws s3api list-object-versions --bucket "$B" --max-items 1000 --query '{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}' --output json)" 2>/dev/null || true
+              aws s3 rb "s3://$B" --force
+            fi
+          done
+
+      - name: Delete shopmart-dev VPCs and dependencies
+        run: |
+          for VPC in $(aws ec2 describe-vpcs --filters "Name=tag:Name,Values=${PROJECT}-vpc" --query 'Vpcs[].VpcId' --output text | tr '\t' '\n'); do
+            [ -z "$VPC" ] && continue
+            echo "Cleaning VPC $VPC"
+
+            # Detach + delete IGWs
+            for IGW in $(aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=$VPC" --query 'InternetGateways[].InternetGatewayId' --output text | tr '\t' '\n'); do
+              [ -n "$IGW" ] && aws ec2 detach-internet-gateway --internet-gateway-id "$IGW" --vpc-id "$VPC" && aws ec2 delete-internet-gateway --internet-gateway-id "$IGW"
+            done
+
+            # Delete subnets
+            for S in $(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC" --query 'Subnets[].SubnetId' --output text | tr '\t' '\n'); do
+              [ -n "$S" ] && aws ec2 delete-subnet --subnet-id "$S"
+            done
+
+            # Delete non-main route tables
+            for RT in $(aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$VPC" --query 'RouteTables[?Associations[0].Main!=`true`].RouteTableId' --output text | tr '\t' '\n'); do
+              [ -n "$RT" ] && aws ec2 delete-route-table --route-table-id "$RT"
+            done
+
+            # Delete non-default security groups
+            for SG in $(aws ec2 describe-security-groups --filters "Name=vpc-id,Values=$VPC" --query 'SecurityGroups[?GroupName!=`default`].GroupId' --output text | tr '\t' '\n'); do
+              [ -n "$SG" ] && aws ec2 delete-security-group --group-id "$SG"
+            done
+
+            aws ec2 delete-vpc --vpc-id "$VPC"
+            echo "Deleted VPC $VPC"
+          done
+
+      - name: Empty Terraform state file in S3
+        run: |
+          if aws s3api head-object --bucket "${{ secrets.TF_STATE_BUCKET }}" --key shopmart/dev/terraform.tfstate >/dev/null 2>&1; then
+            aws s3 rm "s3://${{ secrets.TF_STATE_BUCKET }}/shopmart/dev/terraform.tfstate"
+            echo "Removed terraform.tfstate from state bucket"
+          else
+            echo "No terraform.tfstate object to remove"
+          fi
+
+      - name: Done
+        run: echo "Cleanup complete. You can now re-run the main Pipeline workflow."
