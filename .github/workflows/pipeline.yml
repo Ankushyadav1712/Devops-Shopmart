@@ -92,6 +92,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.7.5
+          terraform_wrapper: false
 
       - name: Terraform init
         run: |
@@ -112,11 +113,28 @@ jobs:
       - name: Capture Terraform outputs
         id: tf_outputs
         run: |
-          echo "ecr_repository_url=$(terraform output -raw ecr_repository_url)" >> "$GITHUB_OUTPUT"
-          echo "ecs_cluster_name=$(terraform output -raw ecs_cluster_name)"     >> "$GITHUB_OUTPUT"
-          echo "ecs_service_name=$(terraform output -raw ecs_service_name)"     >> "$GITHUB_OUTPUT"
-          echo "s3_bucket_name=$(terraform output -raw s3_bucket_name)"         >> "$GITHUB_OUTPUT"
-          echo "alb_dns_name=$(terraform output -raw alb_dns_name)"             >> "$GITHUB_OUTPUT"
+          set -e
+          ECR_URL=$(terraform output -raw ecr_repository_url)
+          CLUSTER=$(terraform output -raw ecs_cluster_name)
+          SERVICE=$(terraform output -raw ecs_service_name)
+          BUCKET=$(terraform output -raw s3_bucket_name)
+          ALB=$(terraform output -raw alb_dns_name)
+
+          echo "ECR repository URL : $ECR_URL"
+          echo "ECS cluster        : $CLUSTER"
+          echo "ECS service        : $SERVICE"
+          echo "S3 bucket          : $BUCKET"
+          echo "ALB DNS            : $ALB"
+
+          [ -n "$ECR_URL" ] || { echo "::error::ecr_repository_url is empty"; exit 1; }
+          [ -n "$CLUSTER" ] || { echo "::error::ecs_cluster_name is empty"; exit 1; }
+          [ -n "$SERVICE" ] || { echo "::error::ecs_service_name is empty"; exit 1; }
+
+          echo "ecr_repository_url=$ECR_URL" >> "$GITHUB_OUTPUT"
+          echo "ecs_cluster_name=$CLUSTER"   >> "$GITHUB_OUTPUT"
+          echo "ecs_service_name=$SERVICE"   >> "$GITHUB_OUTPUT"
+          echo "s3_bucket_name=$BUCKET"      >> "$GITHUB_OUTPUT"
+          echo "alb_dns_name=$ALB"           >> "$GITHUB_OUTPUT"
 
   # ──────────────────────────────────────────────────────────
   # Phase 3 — Container Build & ECS Deployment
@@ -140,15 +158,24 @@ jobs:
       - name: Set image tag
         id: image
         run: |
+          set -e
           SHORT_SHA="${GITHUB_SHA::7}"
           ECR_URL="${{ needs.infrastructure.outputs.ecr_repository_url }}"
+
+          [ -n "$ECR_URL" ] || { echo "::error::ECR repository URL not received from Phase 2"; exit 1; }
+
           REGISTRY="${ECR_URL%%/*}"
-          echo "tag=${SHORT_SHA}"           >> "$GITHUB_OUTPUT"
+          echo "ECR_URL  = $ECR_URL"
+          echo "REGISTRY = $REGISTRY"
+
+          echo "tag=${SHORT_SHA}"            >> "$GITHUB_OUTPUT"
           echo "uri=${ECR_URL}:${SHORT_SHA}" >> "$GITHUB_OUTPUT"
-          echo "registry=${REGISTRY}"       >> "$GITHUB_OUTPUT"
+          echo "registry=${REGISTRY}"        >> "$GITHUB_OUTPUT"
 
       - name: Login to Amazon ECR
         run: |
+          set -e
+          [ -n "${{ steps.image.outputs.registry }}" ] || { echo "::error::registry output empty"; exit 1; }
           aws ecr get-login-password --region "${AWS_REGION}" \
             | docker login --username AWS --password-stdin "${{ steps.image.outputs.registry }}"
 
